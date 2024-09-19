@@ -7,10 +7,11 @@ This guide helps configure access to Opengovernance deployed on DigitalOcean Kub
 ## Contents 
 
 - [Prerequisites](#prerequisites)
-- [Step 1: Upgrade the Opengovernance installation](#step-1-upgrade-the-opengovernance-installation)
-- [Step 2: Installing NGINX Ingress Controller](#step-2-installing-nginx-ingress-controller)
+- [Step 1: Installing NGINX Ingress Controller](#step-1-installing-nginx-ingress-controller)
+- [Step 2: Update DNS record](#step-2-update-dns-record)
 - [Step 3: Configuring TLS Certificate using `cert-manager`](#step-3-configuring-tls-certificate-using-cert-manager)
-- [Step 4: Deploying the Ingress](#step-4-deploying-the-ingress)
+- [Step 4: Update the Application configuration](#step-4--update-the-application-configuration)
+- [Step 5: Deploying the Ingress](#step-5-deploying-the-ingress)
 
 
 ## Prerequisites
@@ -20,54 +21,8 @@ This guide helps configure access to Opengovernance deployed on DigitalOcean Kub
 - Opengovernance installed on a DigitalOcean Kubernetes Cluster.
 - Access to modify DNS records of a domain.
 
-## Step 1: Upgrade the Opengovernance installation
 
-Verify you have access to Opengovernance helm installation in the `opengovernance` namespace
-
-```
-helm list -n opengovernance 
-```
-
-Download and open the [values.yaml](https://github.com/kaytu-io/kaytu-charts/blob/main/charts/open-governance/values.yaml) file in an editor.
-
-Update the field `redirectURIs` for both the entries in the `dex.config.staticClients` section, with the callback URLs of your custom domain.
-
-The `values.yaml` must now look like the following
-
-```
-...
-dex:
-  configSecret:
-    create: false
-  config:
-    staticClients:
-      - id: public-client
-        name: 'Public Client'
-        redirectURIs:
-          - 'https://kaytu.app.domain/callback'
-          - 'http://kaytu.app.domain/callback'
-          - 'http://localhost:3000/callback'
-          - 'http://localhost:8080/callback'
-          - 'https://your.custom.domain/callback'
-          - 'http://your.custom.domain/callback'
-        public: true
-      - id: private-client
-        name: 'Private Client'
-        redirectURIs:
-          - 'https://kaytu.app.domain/callback'
-          - 'https://your.custom.domain/callback'
-          - 'http://your.custom.domain/callback'
-...
-```
-
-Apply these changes to the cluster using the following command 
-
-```
-helm upgrade -f values.yaml opengovernance opengovernance/open-governance -n opengovernance 
-```
-
-
-## Step 2: Installing NGINX Ingress Controller
+## Step 1: Installing NGINX Ingress Controller
 
 Add the official nginx helm repository and update helm.
 
@@ -107,10 +62,13 @@ kubectl get service ingress-nginx-controller -n ingress-nginx
 
 **Note:** Make sure to use the above `EXTERNAL-IP` to create an `A` record with your hosting provider, to point your desired domain at this load balancer.
 
+## Step 2: Update DNS record 
+
+Create a DNS record pointing to the `A` value. In this example we wiil use `opengovernance.domain.com` to create the DNS record. 
 
 ## Step 3: Configuring TLS Certificate using `cert-manager`
 
-> **Skip to [Step 4](#step-4-deploying-the-ingress) if you already have `cert-manager` installed.**
+> **Skip to [Step 4](#step-4--update-the-application-configuration) if you already have `cert-manager` installed.**
 
 Add the official jetstack helm repository and update helm.
 
@@ -172,7 +130,53 @@ The output should be similar to below. The field `READY` should be `True`
 
 ![kubectl get issuer](./images/get-issuer.png)
 
-## Step 4: Deploying the Ingress
+
+## Step 4: Update the Application configuration
+
+Download and open the [values.yaml](https://github.com/kaytu-io/kaytu-charts/blob/main/charts/open-governance/values.yaml) file in an editor.
+
+```
+curl -O https://raw.githubusercontent.com/kaytu-io/kaytu-charts/main/charts/open-governance/values.yaml
+```
+
+The `values.yaml` must now look like the following
+
+```
+...
+dex:
+  configSecret:
+    create: false
+  config:
+    staticClients:
+      - id: public-client
+        name: 'Public Client'
+        redirectURIs:
+          - 'https://kaytu.app.domain/callback'
+          - 'http://kaytu.app.domain/callback'
+          - 'http://localhost:3000/callback'
+          - 'http://localhost:8080/callback'
+          - 'https://opengovernance.domain.com/callback'
+          - 'http://opengovernance.domain.com/callback'
+        public: true
+      - id: private-client
+        name: 'Private Client'
+        redirectURIs:
+          - 'https://kaytu.app.domain/callback'
+          - 'https://opengovernance.domain.com/callback'
+          - 'http://opengovernance.domain.com/callback'
+...
+```
+
+For an example refer to this [values.yaml](https://github.com/ADorigi/scratch/blob/main/example/values.yaml)
+
+Apply these changes to the cluster using the following command 
+
+```
+helm upgrade -f values.yaml opengovernance opengovernance/open-governance -n opengovernance 
+```
+
+
+## Step 5: Deploying the Ingress
 
 Create a kubernetes manifest `cert-manager-issuer.yaml` to define a certificate issuer resource. Make sure to replace `<your-custom-domain>` with your domain.
 
