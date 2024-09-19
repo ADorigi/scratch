@@ -110,6 +110,8 @@ kubectl get service ingress-nginx-controller -n ingress-nginx
 
 ## Step 3: Configuring TLS Certificate using `cert-manager`
 
+> **Skip to [Step 4](#step-4-deploying-the-ingress) if you already have `cert-manager` installed.**
+
 Add the official jetstack helm repository and update helm.
 
 ```
