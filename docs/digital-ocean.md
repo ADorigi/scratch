@@ -178,7 +178,7 @@ helm upgrade -f values.yaml opengovernance opengovernance/open-governance -n ope
 
 ## Step 5: Deploying the Ingress
 
-Create a kubernetes manifest `cert-manager-issuer.yaml` to define a certificate issuer resource. Make sure to replace `<your-custom-domain>` with your domain.
+Create a kubernetes manifest `ingress.yaml` to define an ingress. Make sure to replace `<your-custom-domain>` with your domain.
 
 ```
 # cert-manager-issuer.yaml
