@@ -10,7 +10,7 @@ This guide helps configure access to Opengovernance deployed on DigitalOcean Kub
 - [Step 1: Installing NGINX Ingress Controller](#step-1-installing-nginx-ingress-controller)
 - [Step 2: Update DNS record](#step-2-update-dns-record)
 - [Step 3: Configuring TLS Certificate using `cert-manager`](#step-3-configuring-tls-certificate-using-cert-manager)
-- [Step 4: Update the Application configuration](#step-4--update-the-application-configuration)
+- [Step 4: Update the Application configuration](#step-4-update-the-application-configuration)
 - [Step 5: Deploying the Ingress](#step-5-deploying-the-ingress)
 
 
