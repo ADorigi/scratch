@@ -2,7 +2,7 @@ opengovernance:
   replicaCount: 1
   envType: dev
   domain:
-    main: kaytu.gule-gulzar.com
+    main: kaytudo.gule-gulzar.com
     grpc: grpc.domain
     grpc_external: grpc-external.domain
   docker:

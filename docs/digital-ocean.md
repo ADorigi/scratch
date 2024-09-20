@@ -49,18 +49,15 @@ Install the NGINX Ingress Controller using helm
 helm install ingress-nginx ingress-nginx/ingress-nginx \
   --namespace ingress-nginx \
   --create-namespace \
-  -f do/nginx-ingress-values.yaml
+  -f nginx-ingress-values.yaml
 ```
 
-Run the following command to get the external IP address of the Ingress Controller. Look for the IP address provided in the `EXTERNAL-IP` field. 
-
+It may take a few minutes for the load balancer IP to be available.
+You can watch the status by running 
 ```
-kubectl get service ingress-nginx-controller -n ingress-nginx
+kubectl get service --namespace ingress-nginx ingress-nginx-controller --output wide --watch
 ```
-![Nginx Ingress Controller External IP](./images/ingress-controller-ip.png)
-
-
-**Note:** Make sure to use the above `EXTERNAL-IP` to create an `A` record with your hosting provider, to point your desired domain at this load balancer.
+Look for the IP address provided in the `EXTERNAL-IP` field. 
 
 ## Step 2: Update DNS record 
 
@@ -70,11 +67,14 @@ Create a DNS record pointing to the `A` value. In this example we wiil use `open
 
 > **Skip to [Step 4](#step-4--update-the-application-configuration) if you already have `cert-manager` installed.**
 
-Add the official jetstack helm repository and update helm.
+Add the official jetstack helm repository.
 
 ```
 helm repo add jetstack https://charts.jetstack.io
-helm repo udpate jetstack
+```
+Update the helm repository.
+```
+helm repo update jetstack
 ```
 
 Create `cert-manager-values.yaml` to use when installing cert-manager
@@ -93,7 +93,7 @@ Install the cert-manager chart using helm
 helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
-  -f do/cert-manager-values.yaml
+  -f cert-manager-values.yaml
 ```
 
 Create a kubernetes manifest `cert-manager-issuer.yaml` to define a certificate issuer resource. Make sure to replace the `email` field with a valid email address.
@@ -142,6 +142,11 @@ curl -O https://raw.githubusercontent.com/kaytu-io/kaytu-charts/main/charts/open
 The `values.yaml` must now look like the following
 
 ```
+opengovernance:
+  replicaCount: 1
+  envType: dev
+  domain:
+    main: opengovernance.domain.com
 ...
 dex:
   configSecret:
@@ -175,13 +180,26 @@ Apply these changes to the cluster using the following command
 helm upgrade -f values.yaml opengovernance opengovernance/open-governance -n opengovernance 
 ```
 
+Once the changes have been applied, we need to restart the pod corresponding to dex.
+
+Retrieve the pod name:
+
+```
+POD_NAME=$(kubectl get pods -n opengovernance -l app.kubernetes.io/instance=opengovernance,app.kubernetes.io/name=dex -o jsonpath='{.items[*].metadata.name}')
+
+```
+Delete the pod:
+```
+
+kubectl delete pod $POD_NAME -n opengovernance
+```
 
 ## Step 5: Deploying the Ingress
 
 Create a kubernetes manifest `ingress.yaml` to define an ingress. Make sure to replace `<your-custom-domain>` with your domain.
 
 ```
-# cert-manager-issuer.yaml
+# ssuer.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -211,10 +229,10 @@ spec:
 Deploy the above manifest
 
 ```
-kubectl apply -f cert-manager-issuer.yaml
+kubectl apply -f issuer.yaml
 ```
 
-Confirm that the certificate tis issued and `Ready`
+Confirm that the certificate is issued and `Ready`. The certificate might take a few minutes to get to `Ready` state.
 
 ```
 kubectl get certificates -n opengovernance
